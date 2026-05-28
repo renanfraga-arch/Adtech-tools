@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdTech Tools</title>
+  <style>
+    :root {
+      --brand: #1a1a2e;
+      --accent: #f5c518;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --border: #e0e6ed;
+      --text: #1c2733;
+      --muted: #6b7a8d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header {
+      background: var(--brand); color: #fff;
+      padding: 36px 40px 32px;
+    }
+
+    .badge { background: var(--accent); color: var(--brand); font-weight: 700; font-size: 0.73rem; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 14px; }
+
+    header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; }
+    header p  { font-size: 0.9rem; color: #aab; }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+
+    .section-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .6px; margin-bottom: 16px;
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .tool-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px 22px;
+      text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; gap: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      transition: box-shadow .18s, transform .18s, border-color .18s;
+      position: relative; overflow: hidden;
+    }
+
+    .tool-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--accent); opacity: 0; transition: opacity .18s;
+    }
+
+    .tool-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.12); transform: translateY(-2px); border-color: #c8d0db; }
+    .tool-card:hover::before { opacity: 1; }
+
+    .tool-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .tool-card h3 { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .tool-card p  { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    .tool-tag {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px; margin-top: auto;
+      width: fit-content;
+    }
+
+    .tag-live    { background: #e8f8f0; color: #1a7a4a; }
+    .tag-wip     { background: #fff8e1; color: #8a6200; }
+    .tag-offline { background: #f0f4f8; color: #5a6a7a; }
+
+    .arrow {
+      position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+      font-size: 1.1rem; color: var(--border); transition: color .18s, right .18s;
+    }
+    .tool-card:hover .arrow { color: var(--muted); right: 16px; }
+
+    footer { text-align: center; padding: 32px; color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">AdTech Squad · AB InBev</div>
+  <h1>AdTech Tools</h1>
+  <p>Ferramentas internas do time · Acesso via link direto</p>
+</header>
+
+<div class="container">
+
+  <p class="section-label">People & Performance</p>
+  <div class="tools-grid">
+
+    <a class="tool-card" href="performance-review.html">
+      <div class="tool-icon" style="background:#eef2ff">👥</div>
+      <h3>Painel de Performance</h3>
+      <p>Avaliação colaborativa dos devs com notas por dimensão e sync em tempo real entre líderes.</p>
+      <span class="tool-tag tag-live">● Live · Supabase</span>
+      <span class="arrow">→</span>
+    </a>
+
+  </div>
+
+  <p class="section-label">Benchmarks & Comparativos</p>
+  <div class="tools-grid">
+
+    <a class="tool-card" href="cp-comparison.html">
+      <div class="tool-icon" style="background:#fef9e7">📊</div>
+      <h3>CP Comparison</h3>
+      <p>Benchmark cross-team de Contribution Points — sprints 183–192.</p>
+      <span class="tool-tag tag-offline">Offline</span>
+      <span class="arrow">→</span>
+    </a>
+
+  </div>
+
+</div>
+
+<footer>AdTech Squad · Uso interno</footer>
+
+</body>
+</html>

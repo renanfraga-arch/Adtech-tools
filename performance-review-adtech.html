@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Performance — AdTech Squad</title>
+  <style>
+    :root {
+      --brand: #1a1a2e;
+      --accent: #f5c518;
+      --accent2: #e8b400;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --border: #e0e6ed;
+      --text: #1c2733;
+      --muted: #6b7a8d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Role Overlay ── */
+    #role-overlay {
+      position: fixed; inset: 0; background: rgba(10,10,30,.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; backdrop-filter: blur(4px);
+    }
+    #role-modal {
+      background: #fff; border-radius: 16px; padding: 40px 36px;
+      max-width: 460px; width: 90%; text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,.3);
+    }
+    #role-modal h2 { font-size: 1.3rem; font-weight: 800; color: var(--brand); margin-bottom: 8px; }
+    #role-modal p  { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; }
+    .role-btn {
+      display: block; width: 100%; padding: 14px 20px; margin-bottom: 12px;
+      border: 2px solid var(--border); border-radius: 10px;
+      background: #fff; cursor: pointer; font-size: 0.95rem; font-weight: 600;
+      color: var(--text); transition: all .15s; text-align: left;
+    }
+    .role-btn:hover { border-color: var(--accent2); background: #fffbeb; }
+    .role-btn .role-sub { display: block; font-size: 0.78rem; font-weight: 400; color: var(--muted); margin-top: 2px; }
+    .role-btn.leader1 { border-left: 4px solid #3498db; }
+    .role-btn.leader2 { border-left: 4px solid #9b59b6; }
+    .role-btn.observer { border-left: 4px solid var(--accent2); }
+
+    /* ── Header ── */
+    header {
+      background: var(--brand); color: #fff;
+      padding: 20px 28px; display: flex; align-items: center;
+      justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    header h1 { font-size: 1.3rem; font-weight: 700; }
+    header .meta { font-size: 0.82rem; color: #aab; }
+    .badge { background: var(--accent); color: var(--brand); font-weight: 700; font-size: 0.73rem; padding: 3px 9px; border-radius: 20px; }
+    .session-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.1); border-radius: 20px;
+      padding: 6px 14px; font-size: 0.82rem;
+    }
+    .session-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 18px 60px; }
+
+    .leaders-bar {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center;
+      gap: 20px; flex-wrap: wrap;
+    }
+    .leaders-bar label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-right: 4px; }
+    .leaders-bar input[type="text"] {
+      border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+      font-size: 0.9rem; color: var(--text); width: 170px; outline: none; transition: border-color .15s;
+    }
+    .leaders-bar input[type="text"]:focus { border-color: var(--accent2); }
+
+    /* ── Dev Cards ── */
+    .devs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; margin-bottom: 32px; }
+    .dev-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); transition: box-shadow .2s;
+    }
+    .dev-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+    .dev-card-header { background: var(--brand); padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
+    .dev-avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
+      color: var(--brand); font-weight: 800; font-size: 0.95rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .dev-name-input {
+      background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,.25);
+      color: #fff; font-size: 0.97rem; font-weight: 600; width: 100%; outline: none; padding: 2px 0;
+    }
+    .dev-name-input::placeholder { color: rgba(255,255,255,.45); }
+    .dev-name-input:focus { border-bottom-color: var(--accent); }
+    .dev-card-body { padding: 14px 16px; }
+
+    .dims-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 12px; }
+    .dims-table th {
+      color: var(--muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: .5px; padding: 4px 5px; text-align: center;
+    }
+    .dims-table th:first-child { text-align: left; }
+    .dims-table td { padding: 5px 5px; border-top: 1px solid var(--bg); vertical-align: middle; }
+    .dims-table td:first-child { font-weight: 500; font-size: 0.8rem; max-width: 120px; }
+    .dims-table td:last-child { text-align: center; }
+
+    .rating-group { display: flex; gap: 3px; justify-content: center; }
+    .dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid var(--border); cursor: pointer;
+      font-size: 0.7rem; font-weight: 700; color: var(--muted); background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .12s; user-select: none;
+    }
+    .dot:hover:not(.locked) { border-color: var(--accent2); color: var(--accent2); }
+    .dot.locked { cursor: default; opacity: .55; }
+    .dot.active-1, .dot.active-2 { color: #fff; border-color: transparent; }
+    .dot[data-val="1"].active-1, .dot[data-val="1"].active-2 { background: #e74c3c; }
+    .dot[data-val="2"].active-1, .dot[data-val="2"].active-2 { background: #e67e22; }
+    .dot[data-val="3"].active-1, .dot[data-val="3"].active-2 { background: #f39c12; }
+    .dot[data-val="4"].active-1, .dot[data-val="4"].active-2 { background: #27ae60; }
+    .dot[data-val="5"].active-1, .dot[data-val="5"].active-2 { background: #1abc9c; }
+
+    .avg-badge {
+      display: inline-block; min-width: 34px; padding: 3px 5px;
+      border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-align: center;
+    }
+    .score-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border);
+    }
+    .score-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .score-value { font-size: 1.45rem; font-weight: 800; }
+    .score-bar { flex: 1; height: 7px; background: var(--bg); border-radius: 4px; margin: 0 10px; overflow: hidden; }
+    .score-fill { height: 100%; border-radius: 4px; transition: width .4s ease, background .4s ease; }
+
+    .notes-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .5px; margin-bottom: 5px; display: block; margin-top: 12px;
+    }
+    .notes-area {
+      width: 100%; border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 10px; font-size: 0.83rem; color: var(--text); resize: vertical;
+      min-height: 64px; font-family: inherit; outline: none; transition: border-color .15s;
+    }
+    .notes-area:focus { border-color: var(--accent2); }
+
+    /* ── Summary ── */
+    .summary-section {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .summary-section h2 { padding: 14px 18px; font-size: 0.97rem; font-weight: 800; border-bottom: 1px solid var(--border); color: var(--brand); }
+    .summary-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    .summary-table th {
+      background: var(--bg); padding: 9px 13px; text-align: left;
+      font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
+    }
+    .summary-table td { padding: 10px 13px; border-top: 1px solid var(--border); vertical-align: middle; }
+    .summary-table tr:hover td { background: #fafbfc; }
+    .rank-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      font-size: 0.75rem; font-weight: 800; background: var(--bg); color: var(--muted);
+    }
+    .rank-1 { background: #ffd700; color: #7a5900; }
+    .rank-2 { background: #c0c0c0; color: #555; }
+    .rank-3 { background: #cd7f32; color: #fff; }
+
+    .section-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+
+    .sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; }
+    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; }
+    .sync-dot.synced  { background: #2ecc71; }
+    .sync-dot.syncing { background: #f39c12; animation: pulse 1s infinite; }
+    .sync-dot.error   { background: #e74c3c; }
+
+    .config-banner {
+      background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 20px; font-size: 0.85rem; color: #6d4c00;
+    }
+    .config-banner strong { display: block; margin-bottom: 4px; font-size: 0.9rem; }
+    .config-banner code { background: rgba(0,0,0,.08); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+    @media (max-width: 600px) { .devs-grid { grid-template-columns: 1fr; } }
+    @media print { #role-overlay { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<!-- ── Role selector ── -->
+<div id="role-overlay">
+  <div id="role-modal">
+    <h2>Quem é você nessa sessão?</h2>
+    <p>Sua escolha define qual coluna você pode preencher. As notas dos outros aparecem em tempo real.</p>
+    <button class="role-btn leader1" onclick="setRole('l1')">
+      Líder Técnico 1
+      <span class="role-sub">Preenche a coluna L1 em todos os devs</span>
+    </button>
+    <button class="role-btn leader2" onclick="setRole('l2')">
+      Líder Técnico 2
+      <span class="role-sub">Preenche a coluna L2 em todos os devs</span>
+    </button>
+    <button class="role-btn observer" onclick="setRole('observer')">
+      Squad Leader — Renan (observador)
+      <span class="role-sub">Visualiza tudo, edita nomes e observações</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── Header ── -->
+<header>
+  <div>
+    <div class="badge">AdTech Squad</div>
+    <h1 style="margin-top:7px">Painel de Performance — Revisão com Líderes</h1>
+    <div class="meta" style="margin-top:3px">Reunião preparatória · <span id="today"></span></div>
+  </div>
+  <div class="session-pill" id="session-pill">
+    <div class="session-dot"></div>
+    <span id="session-label">–</span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="config-banner" id="config-banner" style="display:none">
+    <strong>⚠️ Supabase não configurado</strong>
+    Abra o arquivo HTML e substitua <code>COLE_URL_AQUI</code> e <code>COLE_CHAVE_AQUI</code> pelos valores do seu projeto Supabase (<strong>Settings → API</strong>).
+  </div>
+
+  <div class="sync-indicator">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">Conectando…</span>
+  </div>
+
+  <div class="leaders-bar">
+    <div>
+      <label>Líder Técnico 1 →</label>
+      <input type="text" id="leader1-name" placeholder="Nome do líder 1" value="Líder 1" oninput="onLeaderNameChange('l1', this.value)" />
+    </div>
+    <div style="color:var(--border);font-size:1.3rem">|</div>
+    <div>
+      <label>Líder Técnico 2 →</label>
+      <input type="text" id="leader2-name" placeholder="Nome do líder 2" value="Líder 2" oninput="onLeaderNameChange('l2', this.value)" />
+    </div>
+  </div>
+
+  <p class="section-title">Avaliação Individual</p>
+  <div class="devs-grid" id="devs-grid"></div>
+
+  <p class="section-title">Resumo Comparativo</p>
+  <div class="summary-section">
+    <h2>Visão Consolidada do Time</h2>
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Dev</th><th>Entrega</th><th>Colaboração</th>
+          <th>Ownership</th><th>Crescimento</th><th>Média Geral</th><th>Perfil</th>
+        </tr>
+      </thead>
+      <tbody id="summary-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// ══════════════════════════════════════════════
+//  ⚠️  SUBSTITUA OS DOIS VALORES ABAIXO  ⚠️
+// ══════════════════════════════════════════════
+const SUPABASE_URL  = 'https://qntjdidarzvucuneumfu.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_ncM1pLtz5LKQxH_iOq1U_Q_YOqF7saU';
+// ══════════════════════════════════════════════
+
+const DIMS = [
+  { key: 'delivery',  label: 'Entrega / Qualidade' },
+  { key: 'collab',    label: 'Colaboração' },
+  { key: 'ownership', label: 'Ownership / Proatividade' },
+  { key: 'growth',    label: 'Crescimento / Potencial' },
+];
+const DEV_COUNT = 5;
+
+// In-memory state
+const state = {
+  leaderNames: { l1: 'Líder 1', l2: 'Líder 2' },
+  devs: Array.from({ length: DEV_COUNT }, (_, i) => ({
+    name: `Dev ${i + 1}`,
+    notes: '',
+    ratings: Object.fromEntries(DIMS.map(d => [d.key, { l1: 0, l2: 0 }]))
+  }))
+};
+
+let myRole = sessionStorage.getItem('myRole');
+let sbClient = null;
+let saveTimer = null;
+
+// ── Init ──
+async function init() {
+  const isPlaceholder = SUPABASE_URL === 'COLE_URL_AQUI';
+  if (isPlaceholder) {
+    document.getElementById('config-banner').style.display = 'block';
+    setSyncStatus('error', 'Supabase não configurado — modo offline');
+    buildCards(); buildSummary(); return;
+  }
+
+  try {
+    sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    setSyncStatus('syncing', 'Conectando…');
+
+    // Load existing state
+    const { data, error } = await sbClient.from('review').select('payload').eq('id', 1).maybeSingle();
+    if (error) throw error;
+
+    if (data?.payload) {
+      mergePayload(data.payload);
+    } else {
+      // First time: insert empty row
+      await sbClient.from('review').insert({ id: 1, payload: serializeState() });
+    }
+
+    setSyncStatus('synced', 'Sincronizado');
+
+    // Realtime subscription
+    sbClient
+      .channel('review-sync')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'review', filter: 'id=eq.1' },
+        ({ new: row }) => { if (row?.payload) mergePayload(row.payload); })
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') setSyncStatus('synced', 'Sincronizado em tempo real');
+        if (status === 'CHANNEL_ERROR') setSyncStatus('error', 'Erro na conexão realtime');
+      });
+
+  } catch (e) {
+    console.error(e);
+    setSyncStatus('error', 'Erro: ' + e.message);
+  }
+
+  buildCards(); buildSummary();
+}
+
+// ── Serialize / merge ──
+function serializeState() {
+  return JSON.parse(JSON.stringify(state));
+}
+
+function mergePayload(payload) {
+  if (payload.leaderNames) {
+    state.leaderNames = { ...state.leaderNames, ...payload.leaderNames };
+    const l1In = document.getElementById('leader1-name');
+    const l2In = document.getElementById('leader2-name');
+    if (l1In && document.activeElement !== l1In) l1In.value = state.leaderNames.l1;
+    if (l2In && document.activeElement !== l2In) l2In.value = state.leaderNames.l2;
+    updateLeaderLabels();
+  }
+  if (payload.devs) {
+    payload.devs.forEach((dev, di) => {
+      if (!state.devs[di]) return;
+      if (dev.name !== undefined) {
+        state.devs[di].name = dev.name;
+        const inp = document.querySelector(`#card-${di} .dev-name-input`);
+        if (inp && document.activeElement !== inp) inp.value = dev.name;
+        const av = document.getElementById(`avatar-${di}`);
+        if (av) av.textContent = dev.name ? dev.name[0].toUpperCase() : '?';
+      }
+      if (dev.notes !== undefined) {
+        state.devs[di].notes = dev.notes;
+        const ta = document.getElementById(`notes-${di}`);
+        if (ta && document.activeElement !== ta) ta.value = dev.notes;
+      }
+      if (dev.ratings) {
+        DIMS.forEach(dim => {
+          if (!dev.ratings[dim.key]) return;
+          ['l1', 'l2'].forEach(ldr => {
+            const v = dev.ratings[dim.key][ldr];
+            if (v !== undefined && v !== null) {
+              state.devs[di].ratings[dim.key][ldr] = v;
+              refreshDots(di, dim.key, ldr, v);
+              refreshAvg(di, dim.key);
+            }
+          });
+        });
+        refreshOverall(di);
+      }
+    });
+  }
+  updateSummaryAll();
+}
+
+// Debounced save to Supabase
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  setSyncStatus('syncing', 'Salvando…');
+  saveTimer = setTimeout(async () => {
+    if (!sbClient) return;
+    try {
+      const { error } = await sbClient.from('review').update({ payload: serializeState(), updated_at: new Date().toISOString() }).eq('id', 1);
+      if (error) throw error;
+      setSyncStatus('synced', 'Sincronizado');
+    } catch (e) {
+      setSyncStatus('error', 'Erro ao salvar');
+      console.error(e);
+    }
+  }, 600);
+}
+
+// ── Role ──
+function setRole(role) {
+  myRole = role;
+  sessionStorage.setItem('myRole', role);
+  document.getElementById('role-overlay').style.display = 'none';
+  const labels = { l1: state.leaderNames.l1 || 'Líder 1', l2: state.leaderNames.l2 || 'Líder 2', observer: 'Squad Leader' };
+  document.getElementById('session-label').textContent = labels[role] || role;
+  updateDotLock();
+}
+
+function updateDotLock() {
+  document.querySelectorAll('.dot').forEach(dot => {
+    const canEdit = myRole === dot.dataset.leader;
+    dot.classList.toggle('locked', !canEdit);
+    dot.style.pointerEvents = canEdit ? 'auto' : 'none';
+    dot.style.opacity = canEdit ? '1' : '0.5';
+  });
+}
+
+// ── UI helpers ──
+function setSyncStatus(type, msg) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (dot) dot.className = `sync-dot ${type}`;
+  if (lbl) lbl.textContent = msg;
+}
+
+function scoreColor(v) {
+  if (!v) return '#d0d7de';
+  if (v < 2) return '#e74c3c';
+  if (v < 3) return '#e67e22';
+  if (v < 4) return '#f39c12';
+  if (v < 4.5) return '#27ae60';
+  return '#1abc9c';
+}
+
+function fmt(v) { return v ? v.toFixed(1) : '—'; }
+
+function dimAvg(di, dimKey) {
+  const r = state.devs[di].ratings[dimKey];
+  const vals = [r.l1, r.l2].filter(x => x > 0);
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+}
+
+function devOverall(di) {
+  const avgs = DIMS.map(d => dimAvg(di, d.key)).filter(x => x > 0);
+  return avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : 0;
+}
+
+function profileLabel(v) {
+  if (!v)    return '—';
+  if (v < 2)   return 'Precisa de apoio';
+  if (v < 3)   return 'Em desenvolvimento';
+  if (v < 3.8) return 'Dentro do esperado';
+  if (v < 4.5) return 'Acima do esperado';
+  return 'Excepcional';
+}
+
+function refreshDots(di, dimKey, leader, val) {
+  const g = document.getElementById(`rg-${di}-${dimKey}-${leader}`);
+  if (!g) return;
+  g.querySelectorAll('.dot').forEach(dot => {
+    dot.classList.remove('active-1', 'active-2');
+    if (parseInt(dot.dataset.val) === val) dot.classList.add(leader === 'l1' ? 'active-1' : 'active-2');
+  });
+}
+
+function refreshAvg(di, dimKey) {
+  const avg = dimAvg(di, dimKey);
+  const b = document.getElementById(`avg-${di}-${dimKey}`);
+  if (!b) return;
+  b.textContent = fmt(avg);
+  b.style.background = avg ? scoreColor(avg) + '22' : '#f0f0f0';
+  b.style.color = avg ? scoreColor(avg) : '#888';
+}
+
+function refreshOverall(di) {
+  const o = devOverall(di);
+  const ov = document.getElementById(`overall-${di}`);
+  const fill = document.getElementById(`sfill-${di}`);
+  if (ov)   { ov.textContent = fmt(o); ov.style.color = o ? scoreColor(o) : '#ccc'; }
+  if (fill) { fill.style.width = o ? `${(o/5)*100}%` : '0%'; fill.style.background = o ? scoreColor(o) : '#ddd'; }
+}
+
+// ── Event handlers ──
+function setRating(di, dimKey, leader, val) {
+  if (myRole !== leader) return;
+  state.devs[di].ratings[dimKey][leader] = val;
+  refreshDots(di, dimKey, leader, val);
+  refreshAvg(di, dimKey);
+  refreshOverall(di);
+  updateSummaryRow(di);
+  scheduleSave();
+}
+
+function onDevNameChange(di, val) {
+  state.devs[di].name = val;
+  const av = document.getElementById(`avatar-${di}`);
+  if (av) av.textContent = val ? val[0].toUpperCase() : '?';
+  updateSummaryRow(di);
+  scheduleSave();
+}
+
+function onNotesChange(di, val) {
+  state.devs[di].notes = val;
+  scheduleSave();
+}
+
+function onLeaderNameChange(leader, val) {
+  state.leaderNames[leader] = val;
+  updateLeaderLabels();
+  scheduleSave();
+}
+
+function updateLeaderLabels() {
+  for (let di = 0; di < DEV_COUNT; di++) {
+    const th1 = document.getElementById(`th-l1-${di}`);
+    const th2 = document.getElementById(`th-l2-${di}`);
+    if (th1) th1.textContent = state.leaderNames.l1 || 'L1';
+    if (th2) th2.textContent = state.leaderNames.l2 || 'L2';
+  }
+}
+
+// ── Build cards ──
+function buildCards() {
+  const grid = document.getElementById('devs-grid');
+  grid.innerHTML = '';
+  for (let di = 0; di < DEV_COUNT; di++) {
+    const dev = state.devs[di];
+    const card = document.createElement('div');
+    card.className = 'dev-card'; card.id = `card-${di}`;
+    card.innerHTML = `
+      <div class="dev-card-header">
+        <div class="dev-avatar" id="avatar-${di}">${dev.name[0]}</div>
+        <input class="dev-name-input" type="text" value="${dev.name}" placeholder="Nome do dev"
+          oninput="onDevNameChange(${di}, this.value)" />
+      </div>
+      <div class="dev-card-body">
+        <table class="dims-table">
+          <thead>
+            <tr>
+              <th>Dimensão</th>
+              <th id="th-l1-${di}">${state.leaderNames.l1}</th>
+              <th id="th-l2-${di}">${state.leaderNames.l2}</th>
+              <th>Média</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${DIMS.map(dim => `
+            <tr>
+              <td>${dim.label}</td>
+              <td><div class="rating-group" id="rg-${di}-${dim.key}-l1">
+                ${[1,2,3,4,5].map(v => `<div class="dot locked" data-dev="${di}" data-dim="${dim.key}" data-leader="l1" data-val="${v}" onclick="setRating(${di},'${dim.key}','l1',${v})">${v}</div>`).join('')}
+              </div></td>
+              <td><div class="rating-group" id="rg-${di}-${dim.key}-l2">
+                ${[1,2,3,4,5].map(v => `<div class="dot locked" data-dev="${di}" data-dim="${dim.key}" data-leader="l2" data-val="${v}" onclick="setRating(${di},'${dim.key}','l2',${v})">${v}</div>`).join('')}
+              </div></td>
+              <td><span class="avg-badge" id="avg-${di}-${dim.key}" style="background:#f0f0f0;color:#888">—</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="score-row">
+          <span class="score-label">Média Geral</span>
+          <div class="score-bar"><div class="score-fill" id="sfill-${di}" style="width:0%;background:#ddd"></div></div>
+          <span class="score-value" id="overall-${di}" style="color:#ccc">—</span>
+        </div>
+        <span class="notes-label">Observações da reunião</span>
+        <textarea class="notes-area" id="notes-${di}" placeholder="Pontos levantados pelos líderes…"
+          oninput="onNotesChange(${di}, this.value)"></textarea>
+      </div>`;
+    grid.appendChild(card);
+  }
+  if (myRole) updateDotLock();
+}
+
+// ── Summary ──
+function buildSummary() {
+  const tbody = document.getElementById('summary-body');
+  tbody.innerHTML = '';
+  for (let di = 0; di < DEV_COUNT; di++) {
+    const tr = document.createElement('tr'); tr.id = `sum-row-${di}`;
+    tbody.appendChild(tr);
+    updateSummaryRow(di);
+  }
+}
+
+function updateSummaryRow(di) {
+  const tr = document.getElementById(`sum-row-${di}`);
+  if (!tr) return;
+  const overall = devOverall(di);
+  const scores = Array.from({ length: DEV_COUNT }, (_, i) => ({ i, s: devOverall(i) })).sort((a, b) => b.s - a.s);
+  const rank = scores.findIndex(x => x.i === di) + 1;
+  tr.innerHTML = `
+    <td><span class="rank-badge ${rank <= 3 ? `rank-${rank}` : ''}">${rank}</span></td>
+    <td><strong>${state.devs[di].name || `Dev ${di+1}`}</strong></td>
+    ${DIMS.map(d => { const a = dimAvg(di, d.key); return `<td><span style="font-weight:700;color:${a ? scoreColor(a) : '#aaa'}">${fmt(a)}</span></td>`; }).join('')}
+    <td>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:1.1rem;font-weight:800;color:${overall ? scoreColor(overall) : '#ccc'}">${fmt(overall)}</span>
+        <div class="score-bar" style="width:80px;margin:0">
+          <div class="score-fill" style="width:${overall ? (overall/5*100) : 0}%;background:${overall ? scoreColor(overall) : '#ddd'}"></div>
+        </div>
+      </div>
+    </td>
+    <td style="color:${overall ? scoreColor(overall) : '#aaa'};font-size:0.8rem;font-weight:700">${profileLabel(overall)}</td>`;
+
+  const tbody = document.getElementById('summary-body');
+  scores.forEach(({ i }) => { const r = document.getElementById(`sum-row-${i}`); if (r) tbody.appendChild(r); });
+  scores.forEach(({ i }, idx) => {
+    const r = document.getElementById(`sum-row-${i}`); if (!r) return;
+    const b = r.querySelector('.rank-badge'); if (!b) return;
+    b.textContent = idx + 1;
+    b.className = `rank-badge${idx < 3 ? ` rank-${idx+1}` : ''}`;
+  });
+}
+
+function updateSummaryAll() { for (let di = 0; di < DEV_COUNT; di++) updateSummaryRow(di); }
+
+// ── Bootstrap ──
+document.getElementById('today').textContent = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+if (myRole) {
+  document.getElementById('role-overlay').style.display = 'none';
+  const labels = { l1: 'Líder 1', l2: 'Líder 2', observer: 'Squad Leader' };
+  document.getElementById('session-label').textContent = labels[myRole] || myRole;
+}
+
+init();
+</script>
+</body>
+</html>

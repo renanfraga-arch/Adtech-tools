@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Complexity Points – Cross-Team Comparison</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #fff;
+      padding: 40px 48px 36px;
+    }
+    header .label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    header p {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* ── SECTION HEADERS ── */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* ── RANKING CARDS ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 20px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      border-top: 4px solid var(--c);
+      position: relative;
+    }
+    .card .rank {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .card .team-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--c);
+      margin-bottom: 12px;
+    }
+    .card .avg {
+      font-size: 36px;
+      font-weight: 800;
+      color: #1a1a2e;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .card .avg-label {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 14px;
+    }
+    .card .meta {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .card .meta strong { color: #1a1a2e; }
+
+    /* ── CHARTS ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .chart-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    .chart-box h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 18px;
+    }
+    .chart-box canvas { display: block; }
+
+    /* ── TABLE ── */
+    .table-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      margin-bottom: 40px;
+      overflow-x: auto;
+    }
+    .table-box h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      text-align: right;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: #64748b;
+      border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    thead th:first-child, thead th:nth-child(2) { text-align: left; }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .15s; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr.avg-row {
+      background: #f8fafc;
+      border-top: 2px solid #e2e8f0;
+      font-weight: 700;
+    }
+    tbody td {
+      padding: 10px 14px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    tbody td:first-child, tbody td:nth-child(2) { text-align: left; }
+    tbody td.sprint-num { font-weight: 600; color: #374151; }
+    tbody td.date { color: #64748b; font-size: 12px; }
+    tbody td.missing { color: #cbd5e1; }
+    tbody td.zero { color: #94a3b8; }
+
+    .val-adt  { color: #2563eb; font-weight: 600; }
+    .val-exp  { color: #16a34a; font-weight: 600; }
+    .val-catb { color: #dc2626; font-weight: 600; }
+    .val-ck   { color: #d97706; font-weight: 600; }
+
+    /* ── INSIGHTS ── */
+    .insights {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .insight {
+      background: #fff;
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      border-left: 4px solid var(--c);
+    }
+    .insight .i-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--c);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .insight p {
+      font-size: 13px;
+      color: #374151;
+      line-height: 1.55;
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── NOTE ── */
+    .note {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="label">BEES · AdTech · Sprint 192</div>
+  <h1>Complexity Points — Cross-Team Comparison</h1>
+  <p>Activated CP per sprint · Sprints 183–192 · January–May 2026 · All teams using FlowOps methodology (transition date) — issues attributed to the sprint window of their In Production / Done / Resolved transition</p>
+</header>
+
+<main>
+
+  <!-- RANKING CARDS -->
+  <div class="section-title">Team Ranking · Average Activated CP per Sprint</div>
+  <div class="cards">
+    <div class="card" style="--c:#16a34a">
+      <div class="rank">1st place</div>
+      <div class="team-name">BEESCEXP</div>
+      <div class="avg">90.9</div>
+      <div class="avg-label">avg CP / sprint</div>
+      <div class="meta">
+        <span>Total <strong>909</strong></span>
+        <span>Sprints <strong>10 / 10</strong></span>
+      </div>
+    </div>
+    <div class="card" style="--c:#2563eb">
+      <div class="rank">2nd place</div>
+      <div class="team-name">BEESADT</div>
+      <div class="avg">80.1</div>
+      <div class="avg-label">avg CP / sprint</div>
+      <div class="meta">
+        <span>Total <strong>801</strong></span>
+        <span>Sprints <strong>10 / 10</strong></span>
+      </div>
+    </div>
+    <div class="card" style="--c:#dc2626">
+      <div class="rank">3rd place</div>
+      <div class="team-name">BEESCATB</div>
+      <div class="avg">56.5</div>
+      <div class="avg-label">avg CP / sprint</div>
+      <div class="meta">
+        <span>Total <strong>565</strong></span>
+        <span>Sprints <strong>10 / 10</strong></span>
+      </div>
+    </div>
+    <div class="card" style="--c:#d97706">
+      <div class="rank">4th place</div>
+      <div class="team-name">BEESCK</div>
+      <div class="avg">11.4</div>
+      <div class="avg-label">avg CP / sprint</div>
+      <div class="meta">
+        <span>Total <strong>114</strong></span>
+        <span>Sprints <strong>10 / 10</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section-title">Sprint Trend</div>
+  <div class="charts-row">
+    <div class="chart-box">
+      <h3>Activated CP per Sprint — All Teams</h3>
+      <canvas id="lineChart" height="200"></canvas>
+      <div class="legend" style="margin-top:16px">
+        <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>BEESCEXP</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>BEESADT</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>BEESCATB</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>BEESCK</div>
+      </div>
+    </div>
+    <div class="chart-box">
+      <h3>Average CP / Sprint (Sprints 183–192)</h3>
+      <canvas id="barChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="section-title">Sprint-by-Sprint Detail</div>
+  <div class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th>Sprint</th>
+          <th>End Date</th>
+          <th>BEESCEXP</th>
+          <th>BEESADT</th>
+          <th>BEESCATB</th>
+          <th>BEESCK</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="sprint-num">183</td><td class="date">Jan 9</td>  <td class="val-exp">62</td>  <td class="val-adt">3</td>   <td class="val-catb">125</td> <td class="zero">0</td></tr>
+        <tr><td class="sprint-num">184</td><td class="date">Jan 23</td> <td class="val-exp">162</td> <td class="val-adt">162</td> <td class="zero">0</td>       <td class="val-ck">48</td></tr>
+        <tr><td class="sprint-num">185</td><td class="date">Feb 6</td>  <td class="val-exp">282</td> <td class="val-adt">155</td> <td class="val-catb">35</td>  <td class="val-ck">3</td></tr>
+        <tr><td class="sprint-num">186</td><td class="date">Feb 20</td> <td class="val-exp">221</td> <td class="val-adt">116</td> <td class="val-catb">89</td>  <td class="zero">0</td></tr>
+        <tr><td class="sprint-num">187</td><td class="date">Mar 6</td>  <td class="val-exp">157</td> <td class="val-adt">26</td>  <td class="val-catb">67</td>  <td class="val-ck">7</td></tr>
+        <tr><td class="sprint-num">188</td><td class="date">Mar 20</td> <td class="val-exp">25</td>  <td class="val-adt">107</td> <td class="val-catb">18</td>  <td class="val-ck">6</td></tr>
+        <tr><td class="sprint-num">189</td><td class="date">Apr 2</td>  <td class="zero">0</td>      <td class="val-adt">19</td>  <td class="val-catb">119</td> <td class="zero">0</td></tr>
+        <tr><td class="sprint-num">190</td><td class="date">Apr 17</td> <td class="zero">0</td>      <td class="val-adt">85</td>  <td class="val-catb">58</td>  <td class="val-ck">14</td></tr>
+        <tr><td class="sprint-num">191</td><td class="date">Apr 30</td> <td class="zero">0</td>      <td class="val-adt">95</td>  <td class="val-catb">26</td>  <td class="val-ck">33</td></tr>
+        <tr><td class="sprint-num">192</td><td class="date">May 15</td> <td class="zero">0</td>      <td class="val-adt">33</td>  <td class="val-catb">28</td>  <td class="val-ck">3</td></tr>
+        <tr class="avg-row">
+          <td colspan="2">Avg CP / Sprint</td>
+          <td class="val-exp">90.9</td>
+          <td class="val-adt">80.1</td>
+          <td class="val-catb">56.5</td>
+          <td class="val-ck">11.4</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:16px">
+      <strong>0</strong> No CP-bearing issues transitioned to In Production / Done / Resolved within this sprint window &nbsp;·&nbsp;
+      All teams use FlowOps methodology: issues are bucketed by their actual transition date, not the Jira sprint field &nbsp;·&nbsp;
+      Averages calculated over all 10 sprints (0 included)
+    </div>
+  </div>
+
+  <!-- MONTHLY VIEW -->
+  <div class="section-title">Monthly Summary</div>
+  <div class="charts-row" style="margin-bottom:40px">
+    <div class="chart-box">
+      <h3>Activated CP per Month — All Teams</h3>
+      <canvas id="monthlyChart" height="200"></canvas>
+      <div class="legend" style="margin-top:16px">
+        <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>BEESCEXP</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>BEESADT</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>BEESCATB</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>BEESCK</div>
+      </div>
+    </div>
+    <div class="chart-box" style="display:flex;flex-direction:column;justify-content:space-between">
+      <div>
+        <h3>Monthly Totals by Team</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:4px">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b;border-bottom:2px solid #e2e8f0">Month</th>
+              <th style="text-align:right;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;border-bottom:2px solid #e2e8f0">EXP</th>
+              <th style="text-align:right;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#2563eb;border-bottom:2px solid #e2e8f0">ADT</th>
+              <th style="text-align:right;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#dc2626;border-bottom:2px solid #e2e8f0">CATB</th>
+              <th style="text-align:right;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d97706;border-bottom:2px solid #e2e8f0">CK</th>
+              <th style="text-align:right;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b;border-bottom:2px solid #e2e8f0">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:9px 10px;font-weight:600;color:#374151">Jan</td>
+              <td style="padding:9px 10px;text-align:right;color:#16a34a;font-weight:600">224</td>
+              <td style="padding:9px 10px;text-align:right;color:#2563eb;font-weight:600">165</td>
+              <td style="padding:9px 10px;text-align:right;color:#dc2626;font-weight:600">125</td>
+              <td style="padding:9px 10px;text-align:right;color:#d97706;font-weight:600">48</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:700">562</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:9px 10px;font-weight:600;color:#374151">Feb</td>
+              <td style="padding:9px 10px;text-align:right;color:#16a34a;font-weight:600">503</td>
+              <td style="padding:9px 10px;text-align:right;color:#2563eb;font-weight:600">271</td>
+              <td style="padding:9px 10px;text-align:right;color:#dc2626;font-weight:600">124</td>
+              <td style="padding:9px 10px;text-align:right;color:#d97706;font-weight:600">3</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:700">901</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:9px 10px;font-weight:600;color:#374151">Mar</td>
+              <td style="padding:9px 10px;text-align:right;color:#16a34a;font-weight:600">182</td>
+              <td style="padding:9px 10px;text-align:right;color:#2563eb;font-weight:600">133</td>
+              <td style="padding:9px 10px;text-align:right;color:#dc2626;font-weight:600">85</td>
+              <td style="padding:9px 10px;text-align:right;color:#d97706;font-weight:600">13</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:700">413</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:9px 10px;font-weight:600;color:#374151">Apr</td>
+              <td style="padding:9px 10px;text-align:right;color:#94a3b8;font-weight:600">0</td>
+              <td style="padding:9px 10px;text-align:right;color:#2563eb;font-weight:600">199</td>
+              <td style="padding:9px 10px;text-align:right;color:#dc2626;font-weight:600">203</td>
+              <td style="padding:9px 10px;text-align:right;color:#d97706;font-weight:600">47</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:700">449</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:9px 10px;font-weight:600;color:#374151">May <span style="font-size:10px;color:#94a3b8;font-weight:400">(½)</span></td>
+              <td style="padding:9px 10px;text-align:right;color:#94a3b8;font-weight:600">0</td>
+              <td style="padding:9px 10px;text-align:right;color:#2563eb;font-weight:600">33</td>
+              <td style="padding:9px 10px;text-align:right;color:#dc2626;font-weight:600">28</td>
+              <td style="padding:9px 10px;text-align:right;color:#d97706;font-weight:600">3</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:700">64</td>
+            </tr>
+            <tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700">
+              <td style="padding:9px 10px">Total</td>
+              <td style="padding:9px 10px;text-align:right;color:#16a34a">909</td>
+              <td style="padding:9px 10px;text-align:right;color:#2563eb">801</td>
+              <td style="padding:9px 10px;text-align:right;color:#dc2626">565</td>
+              <td style="padding:9px 10px;text-align:right;color:#d97706">114</td>
+              <td style="padding:9px 10px;text-align:right">2389</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:14px;font-size:11px">Sprint end date used to assign month &nbsp;·&nbsp; Apr covers 3 sprints (S189–191) &nbsp;·&nbsp; May = S192 only (partial month)</div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="section-title">Key Insights</div>
+  <div class="insights">
+    <div class="insight" style="--c:#16a34a">
+      <div class="i-title">BEESCEXP — Leads at 90.9 avg, front-loaded delivery</div>
+      <p>Highest average on the FlowOps basis. Sprints 185–187 alone accounted for 660 CP (282 + 221 + 157) — S185 is the single highest sprint value across all teams. Zero activated in sprints 189–192, indicating a significant pipeline build-up heading into the current period.</p>
+    </div>
+    <div class="insight" style="--c:#2563eb">
+      <div class="i-title">BEESADT — Most consistent, 10.8 CP behind BEESCEXP</div>
+      <p>Only team with CP activated in all 10 sprints. The 80.1 avg sits 10.8 CP behind BEESCEXP — a wider gap than the 5.8 the sprint-field method showed. Sprint 184 was the peak (162 CP), driven by issues planned in S183 that activated within the S184 window.</p>
+    </div>
+    <div class="insight" style="--c:#dc2626">
+      <div class="i-title">BEESCATB — 3rd at 56.5 avg, 23.6 below BEESADT</div>
+      <p>Sprint 183 is the actual peak (125 CP); Sprint 189 (119 CP) was close behind. Sprint 184 shows zero — no CP-bearing issues reached a terminal status in that 2-week window. The FlowOps avg of 56.5 is lower than the 61.5 the sprint-field method showed.</p>
+    </div>
+    <div class="insight" style="--c:#d97706">
+      <div class="i-title">BEESCK — Different scale entirely (11.4 avg)</div>
+      <p>Smallest footprint across all 10 sprints. Sprint 184 was the standout (48 CP). Three sprints show zero activated. CP is applied selectively — making this team's average roughly 7× below BEESADT and not directly comparable to teams where CP is assigned broadly.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>BEES AdTech · Sprint 192 Retrospective · Data as of May 15, 2026</footer>
+
+<script>
+  const sprints = ['183\nJan 9','184\nJan 23','185\nFeb 6','186\nFeb 20','187\nMar 6','188\nMar 20','189\nApr 2','190\nApr 17','191\nApr 30','192\nMay 15'];
+  const sprintLabels = ['183','184','185','186','187','188','189','190','191','192'];
+
+  const raw = {
+    exp:  [62, 162, 282, 221, 157, 25, 0, 0, 0, 0],
+    adt:  [3, 162, 155, 116, 26, 107, 19, 85, 95, 33],
+    catb: [125, 0, 35, 89, 67, 18, 119, 58, 26, 28],
+    ck:   [0, 48, 3, 0, 7, 6, 0, 14, 33, 3],
+  };
+
+  // Line chart — null = gap in line
+  const lineCtx = document.getElementById('lineChart').getContext('2d');
+  new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels: sprintLabels,
+      datasets: [
+        { label: 'BEESCEXP', data: raw.exp,  borderColor: '#16a34a', backgroundColor: '#16a34a22', pointBackgroundColor: '#16a34a', borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 7, tension: 0.35, spanGaps: false },
+        { label: 'BEESADT',  data: raw.adt,  borderColor: '#2563eb', backgroundColor: '#2563eb22', pointBackgroundColor: '#2563eb', borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 7, tension: 0.35, spanGaps: false },
+        { label: 'BEESCATB', data: raw.catb, borderColor: '#dc2626', backgroundColor: '#dc262622', pointBackgroundColor: '#dc2626', borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 7, tension: 0.35, spanGaps: false },
+        { label: 'BEESCK',   data: raw.ck,   borderColor: '#d97706', backgroundColor: '#d9770622', pointBackgroundColor: '#d97706', borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 7, tension: 0.35, spanGaps: false },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.raw;
+              if (v === null) return ` ${ctx.dataset.label}: no data`;
+              return ` ${ctx.dataset.label}: ${v} CP`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, color: '#64748b' } },
+        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, color: '#64748b' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // Monthly grouped bar chart
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  const monthly = {
+    exp:  [224, 503, 182, 0, 0],
+    adt:  [165, 271, 133, 199, 33],
+    catb: [125, 124, 85, 203, 28],
+    ck:   [48, 3, 13, 47, 3],
+  };
+  const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+  new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'BEESCEXP', data: monthly.exp,  backgroundColor: '#16a34a', borderRadius: 4, borderSkipped: false },
+        { label: 'BEESADT',  data: monthly.adt,  backgroundColor: '#2563eb', borderRadius: 4, borderSkipped: false },
+        { label: 'BEESCATB', data: monthly.catb, backgroundColor: '#dc2626', borderRadius: 4, borderSkipped: false },
+        { label: 'BEESCK',   data: monthly.ck,   backgroundColor: '#d97706', borderRadius: 4, borderSkipped: false },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} CP` } }
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, color: '#64748b' } },
+        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, color: '#64748b' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // Bar chart — averages
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: ['BEESCEXP', 'BEESADT', 'BEESCATB', 'BEESCK'],
+      datasets: [{
+        label: 'Avg Activated CP / Sprint',
+        data: [90.9, 80.1, 56.5, 11.4],
+        backgroundColor: ['#16a34a', '#2563eb', '#dc2626', '#d97706'],
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} avg CP/sprint` } }
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, color: '#64748b' }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { font: { size: 12, weight: '600' }, color: '#374151' } }
+      }
+    }
+  });
+</script>
+</body>
+</html>
