@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdTech Sprint 193 — Burndown</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; }
+
+    /* ── Header ── */
+    header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .sprint-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; }
+    .sprint-sub { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+    .metrics { display: flex; gap: 10px; flex-wrap: wrap; }
+    .metric { text-align: center; padding: 8px 16px; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0; min-width: 100px; }
+    .metric-val { font-size: 1.25rem; font-weight: 700; }
+    .metric-lbl { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+    .red { color: #dc2626; }
+    .green { color: #16a34a; }
+    .amber { color: #d97706; }
+    .blue { color: #2563eb; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .badge.behind { background: #fef9c3; color: #854d0e; border: 1px solid #fde68a; }
+
+    /* ── Main layout ── */
+    .layout { display: flex; height: calc(100vh - 130px); min-height: 500px; }
+    .chart-col { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; min-width: 0; }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .chart-label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .legend { display: flex; gap: 16px; align-items: center; }
+    .leg { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #64748b; }
+    .leg-line { width: 18px; height: 2px; border-radius: 1px; }
+    .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .chart-box { flex: 1; position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+    canvas { cursor: pointer; }
+    .hint { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 6px; }
+
+    /* ── Side panel ── */
+    .panel { width: 0; overflow: hidden; transition: width 0.28s ease; border-left: 1px solid #e2e8f0; background: #fff; }
+    .panel.open { width: 340px; min-width: 340px; }
+    .panel-inner { width: 340px; padding: 20px 18px; overflow-y: auto; height: 100%; }
+    .panel-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .panel-day { font-size: 1rem; font-weight: 700; color: #0f172a; }
+    .panel-close { background: #f1f5f9; border: none; color: #64748b; cursor: pointer; padding: 4px 9px; border-radius: 6px; font-size: 0.8rem; }
+    .panel-close:hover { background: #e2e8f0; }
+    .panel-rem { font-size: 1.6rem; font-weight: 800; margin-bottom: 2px; }
+    .delta { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; margin-bottom: 14px; }
+    .delta.up { background: #fef2f2; color: #dc2626; }
+    .delta.down { background: #f0fdf4; color: #16a34a; }
+    .delta.flat { background: #f8fafc; color: #64748b; }
+
+    .section-hd { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+    .section-hd.add { color: #dc2626; }
+    .section-hd.done { color: #16a34a; }
+    .section-hd.cancel { color: #d97706; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 11px; margin-bottom: 5px; }
+    .card.add-card { border-left: 3px solid #dc2626; }
+    .card.done-card { border-left: 3px solid #16a34a; }
+    .card.cancel-card { border-left: 3px solid #d97706; }
+    .card-key { font-size: 0.7rem; margin-bottom: 2px; }
+    .card-key a { color: #4f46e5; text-decoration: none; font-weight: 600; }
+    .card-key a:hover { text-decoration: underline; }
+    .card-title { font-size: 0.8rem; color: #334155; line-height: 1.35; }
+    .card-meta { display: flex; gap: 6px; margin-top: 4px; }
+    .tag { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; }
+    .tag.h { background: #ede9fe; color: #5b21b6; }
+    .tag.type { background: #dbeafe; color: #1e40af; }
+    .tag.bug { background: #fee2e2; color: #991b1b; }
+    .tag.cancel { background: #fef3c7; color: #92400e; }
+    .empty-msg { font-size: 0.8rem; color: #94a3b8; font-style: italic; }
+
+    /* ── Tooltip ── */
+    .tt { position: absolute; background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 12px 14px; font-size: 0.78rem; pointer-events: none; opacity: 0; transition: opacity 0.12s; z-index: 50; min-width: 200px; max-width: 280px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+    .tt.show { opacity: 1; }
+    .tt-title { font-weight: 700; color: #f1f5f9; margin-bottom: 5px; }
+    .tt-rem { color: #94a3b8; margin-bottom: 5px; }
+    .tt-rem strong { color: #e2e8f0; }
+    .tt-delta { font-weight: 600; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; display: inline-block; margin-bottom: 8px; }
+    .tt-delta.up { background: rgba(220,38,38,0.2); color: #fca5a5; }
+    .tt-delta.down { background: rgba(22,163,74,0.2); color: #86efac; }
+    .tt-delta.flat { background: rgba(100,116,139,0.2); color: #94a3b8; }
+    .tt-item { color: #94a3b8; padding: 1px 0; }
+    .tt-item strong { color: #cbd5e1; }
+    .tt-footer { margin-top: 8px; font-size: 0.67rem; color: #475569; text-align: center; }
+    .tt-future { color: #475569; font-style: italic; }
+
+    /* ── Bottom open work ── */
+    .bottom { background: #fff; border-top: 1px solid #e2e8f0; padding: 12px 28px; }
+    .bottom-title { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: flex; gap: 8px; align-items: center; }
+    .pill { background: #e2e8f0; color: #475569; padding: 1px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th { text-align: left; color: #94a3b8; font-weight: 600; padding: 4px 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:hover td { background: #f8fafc; }
+    a.jira { color: #4f46e5; text-decoration: none; font-weight: 600; }
+    a.jira:hover { text-decoration: underline; }
+    .st { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 0.68rem; font-weight: 600; white-space: nowrap; }
+    .st.dev { background: #dbeafe; color: #1e40af; }
+    .st.review { background: #ede9fe; color: #5b21b6; }
+    .st.sit { background: #dcfce7; color: #15803d; }
+    .st.uat { background: #fef9c3; color: #854d0e; }
+    .st.prod { background: #dcfce7; color: #15803d; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="sprint-title">AdTech — Sprint 193</div>
+    <div class="sprint-sub">May 18 – May 29, 2026 &nbsp;·&nbsp; BEESADT &nbsp;·&nbsp; Hours-based burndown</div>
+  </div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-val red">165h</div><div class="metric-lbl">Remaining</div></div>
+    <div class="metric"><div class="metric-val" style="color:#7c3aed">143h</div><div class="metric-lbl">Ideal today</div></div>
+    <div class="metric"><div class="metric-val amber">+22h</div><div class="metric-lbl">Behind</div></div>
+    <div class="metric"><div class="metric-val green">60h</div><div class="metric-lbl">Burned</div></div>
+    <div class="metric"><div class="metric-val blue">7</div><div class="metric-lbl">Days left</div></div>
+  </div>
+  <div class="badge behind">⚠ Slightly behind guideline</div>
+</header>
+
+<div class="layout">
+  <div class="chart-col">
+    <div class="chart-header">
+      <div class="chart-label">Remaining Time Estimate</div>
+      <div class="legend">
+        <div class="leg"><div class="leg-line" style="background:#94a3b8;border-top:2px dashed #94a3b8"></div> Guideline</div>
+        <div class="leg"><div class="leg-dot" style="background:#dc2626"></div> Remaining</div>
+        <div class="leg"><div class="leg-dot" style="background:#dc2626;clip-path:polygon(50% 0%,0% 100%,100% 100%)"></div> Scope added</div>
+      </div>
+    </div>
+    <div class="chart-box" id="chart-box">
+      <canvas id="burndown"></canvas>
+      <div class="tt" id="tt"></div>
+    </div>
+    <div class="hint">Click any point for details &nbsp;·&nbsp; Hover for quick summary</div>
+  </div>
+  <div class="panel" id="panel">
+    <div class="panel-inner" id="panel-inner"></div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="bottom-title">Open work remaining <span class="pill">165h total</span></div>
+  <table>
+    <thead><tr><th>Issue</th><th>Summary</th><th>Remaining</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2993" target="_blank">BEESADT-2993</a></td><td>Daily</td><td>17.8h</td><td><span class="st dev">In Progress</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2995" target="_blank">BEESADT-2995</a></td><td>Demo, Review &amp; Retro</td><td>24.0h</td><td><span class="st dev">In Progress</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2997" target="_blank">BEESADT-2997</a></td><td>Refinement &amp; Discovery</td><td>20.5h</td><td><span class="st dev">In Progress</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-3000" target="_blank">BEESADT-3000</a></td><td>Overhead</td><td>16.3h</td><td><span class="st dev">In Progress</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2819" target="_blank">BEESADT-2819</a></td><td>[iOS] Redeemable integration on Brand Spotlight</td><td>37.0h</td><td><span class="st dev">In Development</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2859" target="_blank">BEESADT-2859</a></td><td>Error state: insufficient points</td><td>12.0h</td><td><span class="st dev">Backlog</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2939" target="_blank">BEESADT-2939</a></td><td>[BE] Refactor Ads Integration Service — Auction Strategy</td><td>14.0h</td><td><span class="st review">Ready for Code Review</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2855" target="_blank">BEESADT-2855</a></td><td>REQ-004 Multiproduct card</td><td>7.0h</td><td><span class="st review">Ready for Code Review</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2856" target="_blank">BEESADT-2856</a></td><td>REQ-005 Points discount support</td><td>4.0h</td><td><span class="st review">Ready for Code Review</span></td></tr>
+      <tr><td><a class="jira" href="https://ab-inbev.atlassian.net/browse/BEESADT-2992" target="_blank">BEESADT-2992</a></td><td>[BE] Fix 'Max Pods Reached' alerts on PROD HPAs</td><td>6.0h</td><td><span class="st dev">Backlog</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const JIRA = 'https://ab-inbev.atlassian.net/browse/';
+
+const DAYS = [
+  {
+    label: 'May 18', guideline: 225, actual: 213, isWeekend: false,
+    done:      [ {key:'BEESADT-2831', title:'Deploy Prep', h:1}, {key:'BEESADT-2832', title:'Deploy', h:2} ],
+    cancelled: [ {key:'BEESADT-2460', title:'TEST UAT', h:3}, {key:'BEESADT-2462', title:'[BE] Validate UAT', h:2} ],
+    added:     []
+  },
+  {
+    label: 'May 19', guideline: 204.5, actual: 206, isWeekend: false,
+    done:      [ {key:'BEESADT-2599', title:'Tests in SIT', h:3}, {key:'BEESADT-2940', title:'[Auction Strategy] REQ-001/002/006 — Orchestrator Core', h:4} ],
+    cancelled: [],
+    added:     [ {key:'BEESADT-3003', title:'[iOS][Combos] Discount badge and Show Combo button missing', h:0, type:'Bug'}, {key:'BEESADT-3005', title:'[BE] Combo events not received in PROD', h:0, type:'Bug'} ]
+  },
+  {
+    label: 'May 20', guideline: 184.1, actual: 201, isWeekend: false,
+    done:      [ {key:'BEESADT-2833', title:'Smoke Prep', h:1}, {key:'BEESADT-2835', title:'Smoke Prod BE', h:2}, {key:'BEESADT-2853', title:'REQ-001/002 Product Differentiation', h:2} ],
+    cancelled: [],
+    added:     [ {key:'BEESADT-3006', title:'Add new Strings into AppLanga', h:0, type:'Sub-Task'} ]
+  },
+  {
+    label: 'May 21', guideline: 163.6, actual: 176, isWeekend: false,
+    done:      [ {key:'BEESADT-2854', title:'REQ-003 Single product card', h:7}, {key:'BEESADT-2858', title:'Analytics (REQ-007 to REQ-012)', h:4}, {key:'BEESADT-2942', title:'[Auction Strategy] REQ-003/004 — SponsoredListing & Banner', h:4}, {key:'BEESADT-2945', title:'[Auction Strategy] REQ-006 — Strategy Resolution', h:2}, {key:'BEESADT-2957', title:'Tests in UAT', h:3}, {key:'BEESADT-2958', title:'Tests in UAT', h:3} ],
+    cancelled: [ {key:'BEESADT-2946', title:'[Auction Strategy] REQ-007/008 — Quality Gate', h:4} ],
+    added:     [ {key:'BEESADT-3008', title:'[Android][Combos] Tapping Show Combo does not redirect', h:0, type:'Bug'} ]
+  },
+  {
+    label: 'May 22', guideline: 143.2, actual: 165, isWeekend: false,
+    done:      [ {key:'BEESADT-2834', title:'Smoke Prod QA', h:1}, {key:'BEESADT-2836', title:'Smoke Prod Mobile', h:2} ],
+    cancelled: [],
+    added:     []
+  },
+  { label: 'May 23', guideline: 122.7, actual: null, isWeekend: true,  done:[], cancelled:[], added:[] },
+  { label: 'May 24', guideline: 102.3, actual: null, isWeekend: true,  done:[], cancelled:[], added:[] },
+  { label: 'May 25', guideline: 81.8,  actual: null, isWeekend: false, done:[], cancelled:[], added:[] },
+  { label: 'May 26', guideline: 61.4,  actual: null, isWeekend: false, done:[], cancelled:[], added:[] },
+  { label: 'May 27', guideline: 40.9,  actual: null, isWeekend: false, done:[], cancelled:[], added:[] },
+  { label: 'May 28', guideline: 20.5,  actual: null, isWeekend: false, done:[], cancelled:[], added:[] },
+  { label: 'May 29', guideline: 0,     actual: null, isWeekend: false, done:[], cancelled:[], added:[] },
+];
+
+const TODAY = 4; // index of today (May 22)
+
+/* ── Chart ── */
+const ctx = document.getElementById('burndown').getContext('2d');
+
+function pointColor(d) {
+  if (d.actual === null) return 'transparent';
+  const prev = DAYS[DAYS.indexOf(d) - 1];
+  if (!prev || prev.actual === null) return '#dc2626';
+  if (d.actual > prev.actual) return '#ef4444';   // went up
+  if (d.actual < prev.actual) return '#16a34a';   // went down
+  return '#f59e0b';
+}
+
+function segColor(ctx) {
+  const y0 = ctx.p0.parsed.y, y1 = ctx.p1.parsed.y;
+  if (y0 === null || y1 === null) return 'transparent';
+  return y1 > y0 ? '#ef4444' : '#dc2626';
+}
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: DAYS.map(d => d.label),
+    datasets: [
+      {
+        label: 'Guideline',
+        data: DAYS.map(d => d.guideline),
+        borderColor: '#94a3b8',
+        borderDash: [5, 4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+        order: 2
+      },
+      {
+        label: 'Remaining',
+        data: DAYS.map(d => d.actual),
+        borderColor: '#dc2626',
+        borderWidth: 2.5,
+        pointRadius: DAYS.map(d => d.actual !== null ? 6 : 0),
+        pointHoverRadius: DAYS.map(d => d.actual !== null ? 9 : 0),
+        pointBackgroundColor: DAYS.map(d => pointColor(d)),
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        fill: false,
+        tension: 0.1,
+        spanGaps: false,
+        segment: { borderColor: ctx => segColor(ctx) },
+        order: 1
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' },
+        ticks: { color: '#94a3b8', font: { size: 11 } }
+      },
+      y: {
+        min: 0,
+        max: 260,
+        grid: { color: '#f1f5f9' },
+        ticks: { color: '#94a3b8', font: { size: 11 }, stepSize: 40, callback: v => v + 'h' }
+      }
+    },
+    onClick(e) {
+      const pts = chart.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+      if (!pts.length) return;
+      const i = pts[0].index;
+      if (DAYS[i].actual !== null) openPanel(i);
+    },
+    onHover(e, els) {
+      if (!els.length) { hideTooltip(); return; }
+      showTooltip(e, els[0].index);
+    }
+  },
+  plugins: [
+    {
+      id: 'weekends',
+      beforeDraw(chart) {
+        const { ctx, scales: { x, y } } = chart;
+        DAYS.forEach((d, i) => {
+          if (!d.isWeekend) return;
+          const x0 = x.getPixelForValue(i) - (x.getPixelForValue(1) - x.getPixelForValue(0)) / 2;
+          const x1 = x.getPixelForValue(i) + (x.getPixelForValue(1) - x.getPixelForValue(0)) / 2;
+          ctx.save();
+          ctx.fillStyle = 'rgba(241,245,249,0.8)';
+          ctx.fillRect(x0, y.top, x1 - x0, y.bottom - y.top);
+          ctx.restore();
+        });
+      }
+    },
+    {
+      id: 'todayLine',
+      afterDraw(chart) {
+        const { ctx, scales: { x, y } } = chart;
+        const px = x.getPixelForValue(TODAY);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(99,102,241,0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(px, y.top); ctx.lineTo(px, y.bottom); ctx.stroke();
+        ctx.fillStyle = 'rgba(99,102,241,0.8)';
+        ctx.font = 'bold 10px -apple-system,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('TODAY', px, y.top - 5);
+        ctx.restore();
+      }
+    }
+  ]
+});
+
+/* ── Tooltip ── */
+const tt = document.getElementById('tt');
+
+function buildDelta(idx) {
+  const d = DAYS[idx];
+  if (d.actual === null) return null;
+  const prev = idx > 0 ? DAYS[idx - 1].actual : DAYS[idx].actual;
+  return d.actual - (prev ?? d.actual);
+}
+
+function showTooltip(e, idx) {
+  const d = DAYS[idx];
+  const delta = buildDelta(idx);
+  const sign = delta > 0 ? '+' : '';
+  const dcls = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+  const dlabel = delta > 0 ? `${sign}${delta.toFixed(1)}h scope added` : delta < 0 ? `${delta.toFixed(1)}h burned` : 'no change';
+
+  let html = `<div class="tt-title">${d.label}</div>`;
+  if (d.actual === null) {
+    html += `<div class="tt-future">Future — no data yet</div><div class="tt-rem">Guideline: <strong>${d.guideline}h</strong></div>`;
+  } else {
+    html += `<div class="tt-rem">Remaining: <strong>${d.actual}h</strong></div>`;
+    if (delta !== null) html += `<div class="tt-delta ${dcls}">${dlabel}</div>`;
+    if (d.added.length) {
+      html += `<div style="font-size:.68rem;color:#fca5a5;margin-bottom:3px">↑ SCOPE ADDED</div>`;
+      d.added.forEach(i => { html += `<div class="tt-item"><strong>${i.key}</strong> — ${i.title.slice(0,40)}…</div>`; });
+    }
+    const burns = [...d.done, ...d.cancelled];
+    if (burns.length) {
+      html += `<div style="font-size:.68rem;color:#86efac;margin:6px 0 3px">↓ RESOLVED (${burns.reduce((s,x)=>s+x.h,0)}h)</div>`;
+      burns.slice(0,3).forEach(i => { html += `<div class="tt-item"><strong>${i.key}</strong> (${i.h}h)</div>`; });
+      if (burns.length > 3) html += `<div class="tt-item">…and ${burns.length-3} more</div>`;
+    }
+    html += `<div class="tt-footer">Click for full detail →</div>`;
+  }
+
+  tt.innerHTML = html;
+  const box = document.getElementById('chart-box').getBoundingClientRect();
+  let lx = e.native.clientX - box.left + 12;
+  let ty = e.native.clientY - box.top - 10;
+  if (lx + 290 > box.width) lx = e.native.clientX - box.left - 302;
+  tt.style.left = lx + 'px';
+  tt.style.top = Math.max(4, ty) + 'px';
+  tt.classList.add('show');
+}
+
+function hideTooltip() { tt.classList.remove('show'); }
+document.getElementById('chart-box').addEventListener('mouseleave', hideTooltip);
+
+/* ── Side panel ── */
+function openPanel(idx) {
+  hideTooltip();
+  const d = DAYS[idx];
+  const delta = buildDelta(idx);
+  const sign = delta > 0 ? '+' : '';
+  const dcls = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+  const dlabel = delta > 0 ? `${sign}${delta.toFixed(1)}h — scope added` : delta < 0 ? `${delta.toFixed(1)}h burned` : 'no net change';
+  const totalBurned = [...d.done, ...d.cancelled].reduce((s,x)=>s+x.h,0);
+  const totalAdded = d.added.reduce((s,x)=>s+x.h,0);
+
+  let html = `
+    <div class="panel-head">
+      <div>
+        <div class="panel-day">${d.label}</div>
+        <div style="font-size:.72rem;color:#64748b;margin-top:2px">Sprint day ${idx + 1} of 12</div>
+      </div>
+      <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div class="panel-rem ${delta > 0 ? 'red' : delta < 0 ? 'green' : 'amber'}">${d.actual}h</div>
+    <div class="delta ${dcls}">${dlabel}</div>
+  `;
+
+  if (d.added.length) {
+    html += `<div style="margin-bottom:8px"><div class="section-hd add">↑ Added to sprint</div>`;
+    d.added.forEach(i => {
+      html += `<div class="card add-card">
+        <div class="card-key"><a href="${JIRA}${i.key}" target="_blank">${i.key}</a></div>
+        <div class="card-title">${i.title}</div>
+        <div class="card-meta"><span class="tag bug">${i.type || 'Bug'}</span>${i.h ? `<span class="tag h">${i.h}h</span>` : ''}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (d.done.length) {
+    html += `<div style="margin-bottom:8px"><div class="section-hd done">↓ Resolved — ${d.done.reduce((s,x)=>s+x.h,0)}h</div>`;
+    d.done.forEach(i => {
+      html += `<div class="card done-card">
+        <div class="card-key"><a href="${JIRA}${i.key}" target="_blank">${i.key}</a></div>
+        <div class="card-title">${i.title}</div>
+        <div class="card-meta"><span class="tag h">${i.h}h</span><span class="tag type">Done</span></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (d.cancelled.length) {
+    html += `<div style="margin-bottom:8px"><div class="section-hd cancel">✕ Cancelled — ${d.cancelled.reduce((s,x)=>s+x.h,0)}h</div>`;
+    d.cancelled.forEach(i => {
+      html += `<div class="card cancel-card">
+        <div class="card-key"><a href="${JIRA}${i.key}" target="_blank">${i.key}</a></div>
+        <div class="card-title">${i.title}</div>
+        <div class="card-meta"><span class="tag h">${i.h}h</span><span class="tag cancel">Cancelled</span></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (!d.done.length && !d.cancelled.length && !d.added.length) {
+    html += `<div class="empty-msg">${d.actual === null ? 'Future date — no data yet.' : 'No resolved tasks recorded for this day.'}</div>`;
+  }
+
+  if (d.isWeekend) html += `<div class="empty-msg" style="margin-top:8px">Weekend — non-working day.</div>`;
+
+  document.getElementById('panel-inner').innerHTML = html;
+  document.getElementById('panel').classList.add('open');
+  chart.resize();
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  chart.resize();
+}
+</script>
+</body>
+</html>
