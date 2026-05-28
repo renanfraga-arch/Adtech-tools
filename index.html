@@ -89,6 +89,15 @@
     }
     .tool-card:hover .arrow { color: var(--muted); right: 16px; }
 
+    .tool-card[draggable="true"] { cursor: grab; user-select: none; }
+    .tool-card.dragging { opacity: 0.3; box-shadow: none !important; transform: none !important; }
+    .drag-handle {
+      position: absolute; top: 10px; right: 18px;
+      font-size: 0.85rem; color: var(--border);
+      opacity: 0; transition: opacity .15s; cursor: grab;
+    }
+    .tool-card:hover .drag-handle { opacity: 1; color: var(--muted); }
+
     footer { text-align: center; padding: 32px; color: var(--muted); font-size: 0.8rem; }
   </style>
 </head>
@@ -140,7 +149,7 @@ function authCheck(){
 
   <div class="tools-grid">
 
-    <a class="tool-card" href="performance-review.html">
+    <a class="tool-card" href="performance-review.html" data-id="performance">
       <div class="tool-icon" style="background:#eef2ff">👥</div>
       <h3>Painel de Performance</h3>
       <p>Avaliação colaborativa dos devs com notas por dimensão e sync em tempo real entre líderes.</p>
@@ -148,7 +157,7 @@ function authCheck(){
       <span class="arrow">→</span>
     </a>
 
-    <a class="tool-card" href="burndown-sprint193.html">
+    <a class="tool-card" href="burndown-sprint193.html" data-id="burndown">
       <div class="tool-icon" style="background:#fdf2f8">📉</div>
       <h3>Burndown — Sprint 193</h3>
       <p>Hours-based burndown com detalhes por dia, scope changes e itens em aberto.</p>
@@ -156,7 +165,7 @@ function authCheck(){
       <span class="arrow">→</span>
     </a>
 
-    <a class="tool-card" href="cp-comparison.html">
+    <a class="tool-card" href="cp-comparison.html" data-id="cp">
       <div class="tool-icon" style="background:#fef9e7">📊</div>
       <h3>CP Comparison</h3>
       <p>Benchmark cross-team de Contribution Points — sprints 183–192.</p>
@@ -169,6 +178,56 @@ function authCheck(){
 </div>
 
 <footer>🐝 BEES AdTech Squad · by <span style="color:var(--cit);font-weight:700">CI&amp;T</span> · Uso interno</footer>
+
+<script>
+(function () {
+  const grid = document.querySelector('.tools-grid');
+  let dragged = null;
+
+  // Restore saved order
+  const saved = localStorage.getItem('adtech_order');
+  if (saved) {
+    try {
+      JSON.parse(saved).forEach(id => {
+        const el = grid.querySelector('[data-id="' + id + '"]');
+        if (el) grid.appendChild(el);
+      });
+    } catch (e) {}
+  }
+
+  grid.querySelectorAll('.tool-card').forEach(card => {
+    card.draggable = true;
+
+    // Inject drag handle
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    handle.title = 'Arrastar para reordenar';
+    card.appendChild(handle);
+
+    card.addEventListener('dragstart', e => {
+      dragged = card;
+      setTimeout(() => card.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      dragged = null;
+      const order = [...grid.querySelectorAll('.tool-card')].map(c => c.dataset.id);
+      localStorage.setItem('adtech_order', JSON.stringify(order));
+    });
+
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!dragged || dragged === card) return;
+      const rect = card.getBoundingClientRect();
+      const after = e.clientX > rect.left + rect.width / 2;
+      grid.insertBefore(dragged, after ? card.nextSibling : card);
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
