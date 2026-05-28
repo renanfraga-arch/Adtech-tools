@@ -8,6 +8,7 @@
     :root {
       --brand: #1a1a2e;
       --accent: #f5c518;
+      --cit: #e8513a;
       --bg: #f4f6f9;
       --card: #ffffff;
       --border: #e0e6ed;
@@ -19,14 +20,16 @@
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     header {
-      background: var(--brand); color: #fff;
+      background: var(--accent);
       padding: 36px 40px 32px;
     }
 
-    .badge { background: var(--accent); color: var(--brand); font-weight: 700; font-size: 0.73rem; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 14px; }
+    .header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .bees-mark { font-size: 1.05rem; font-weight: 900; color: var(--brand); letter-spacing: -.3px; }
+    .cit-badge { background: var(--cit); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
 
-    header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; }
-    header p  { font-size: 0.9rem; color: #aab; }
+    header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; color: var(--brand); }
+    header p  { font-size: 0.9rem; color: rgba(28,39,51,.6); }
 
     .container { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
 
@@ -93,9 +96,10 @@
 
 <div id="auth-gate" style="position:fixed;inset:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif">
   <div style="background:#fff;border-radius:16px;padding:40px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.4)">
-    <div style="font-size:2rem;margin-bottom:16px">🔒</div>
-    <h2 style="font-size:1.2rem;font-weight:800;color:#1a1a2e;margin-bottom:6px">AdTech Tools</h2>
-    <p style="font-size:0.85rem;color:#6b7a8d;margin-bottom:24px">Acesso restrito ao time</p>
+    <div style="font-size:2rem;margin-bottom:12px">🐝</div>
+    <h2 style="font-size:1.2rem;font-weight:800;color:#1a1a2e;margin-bottom:4px">BEES AdTech Tools</h2>
+    <p style="font-size:0.8rem;color:#e8513a;font-weight:700;margin-bottom:4px">by CI&amp;T</p>
+    <p style="font-size:0.82rem;color:#6b7a8d;margin-bottom:24px">Acesso restrito ao time</p>
     <input id="auth-input" type="password" placeholder="Senha" style="width:100%;border:2px solid #e0e6ed;border-radius:10px;padding:12px 14px;font-size:1rem;outline:none;margin-bottom:12px;transition:border-color .15s" onkeydown="if(event.key==='Enter')authCheck()" />
     <div id="auth-error" style="color:#e74c3c;font-size:0.8rem;margin-bottom:10px;min-height:18px"></div>
     <button onclick="authCheck()" style="width:100%;background:#f5c518;border:none;border-radius:10px;padding:13px;font-size:0.95rem;font-weight:700;cursor:pointer;color:#1a1a2e">Entrar</button>
@@ -124,9 +128,12 @@ function authCheck(){
 </script>
 
 <header>
-  <div class="badge">AdTech Squad · AB InBev</div>
+  <div class="header-top">
+    <span class="bees-mark">🐝 BEES</span>
+    <span class="cit-badge">by CI&amp;T</span>
+  </div>
   <h1>AdTech Tools</h1>
-  <p>Ferramentas internas do time · Acesso via link direto</p>
+  <p>Ferramentas internas do squad · Uso restrito</p>
 </header>
 
 <div class="container">
@@ -161,7 +168,7 @@ function authCheck(){
 
 </div>
 
-<footer>AdTech Squad · Uso interno</footer>
+<footer>🐝 BEES AdTech Squad · by <span style="color:var(--cit);font-weight:700">CI&amp;T</span> · Uso interno</footer>
 
 </body>
 </html>
